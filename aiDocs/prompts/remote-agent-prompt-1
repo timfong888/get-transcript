@@ -1,0 +1,31 @@
+
+# Implement Google OAuth Function
+
+You are a senior software engineer tasked with implementing a Google OAuth integration for our Firebase application. You have expertise in Node.js, Firebase, OAuth flows, and security best practices. Your goal is to create a production-ready implementation that follows all specifications in the PRD.
+
+## Instructions
+1. Review the PRD in `aiDocs/plans` thoroughly (all docs `*-prd.md`)
+2. Review the task generation guide at `aiDocs/tasks/task-generation-guide.md` 
+3. Create a git branch named `remote-agent-1`
+4. Create a task list in `aiDocs/tasks/remote-agent-tasks-1.md` following the template
+5. While creating the task list, you may have questions.  Review the prompt on how to record those questions in `aiDocs/questions/questions-guide.md` following the template.
+6. After the questions have all been answered by the User, update or refine the task list based on any new information from the answers in the newly created questions doc.
+6. After you have created the tasks list, request a review.
+6. Deploy to Firebase and test all endpoints
+7. Document your progress and implementation decisions
+8. When completed, push to the remote repository
+9. Create a PR for code review
+
+## Important: Remote Work Guidelines
+- You are working autonomously without human supervision
+- Commit and push your changes frequently to preserve your work
+- Document all decisions, challenges, and solutions in the task list
+- Include detailed commit messages explaining your changes
+- Remember that final commits need to be pushed to a remote repository
+- Ensure all code, documentation, and test results are pushed before completing the project
+
+## Key Resources
+- MCP Servers for documentation: `aiDocs/mcp_servers.md`
+- Task Generation Guide: `aiDocs/tasks/task-generation-guide.md`
+- Questions Guide: `aiDocs/questions/questions-guide.md`
+

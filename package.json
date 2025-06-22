@@ -1,0 +1,31 @@
+{
+  "name": "get-transcript",
+  "version": "1.1.0",
+  "description": "Firebase Cloud Function for retrieving YouTube video transcripts using Webshare proxy",
+  "main": "functions/main.py",
+  "scripts": {
+    "deploy": "firebase deploy --only functions",
+    "test": "python test_local.py",
+    "setup-secrets": "./setup-secrets.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timfong888/get-transcript.git"
+  },
+  "keywords": [
+    "youtube",
+    "transcript",
+    "firebase",
+    "cloud-functions",
+    "webshare",
+    "proxy"
+  ],
+  "author": "Tim Fong",
+  "license": "MIT",
+  "dependencies": {
+    "firebase-functions": "^4.0.0"
+  },
+  "engines": {
+    "python": ">=3.11"
+  }
+}
