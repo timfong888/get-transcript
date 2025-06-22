@@ -1,11 +1,12 @@
 import json
 import logging
 import requests
+import random
 from typing import Dict, Any
 from firebase_functions import https_fn
 from firebase_functions.params import SecretParam
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.proxies import WebshareProxyConfig
+from youtube_transcript_api.proxies import GenericProxyConfig
 from youtube_transcript_api._errors import (
     TranscriptsDisabled,
     NoTranscriptFound,
@@ -32,30 +33,65 @@ def validate_video_id(video_id: str) -> bool:
     return all(c in allowed_chars for c in video_id)
 
 
+def get_backbone_proxy(proxy_username: str, proxy_password: str) -> tuple:
+    """
+    Get a random backbone proxy for stable endpoint with rotating IPs.
+
+    Args:
+        proxy_username: Base Webshare proxy username
+        proxy_password: Webshare proxy password
+
+    Returns:
+        Tuple of (proxy_url, proxy_description) for the selected backbone proxy
+    """
+    try:
+        logger.info("🏗️ Selecting random backbone proxy for stable endpoint...")
+
+        # Select a random backbone proxy (1-25 based on Webshare API data)
+        proxy_number = random.randint(1, 25)
+        proxy_host = "p.webshare.io"
+        proxy_port = 10000 + proxy_number - 1  # ports start at 10000
+        full_username = f"{proxy_username}-{proxy_number}"
+
+        # Create the backbone proxy URL
+        proxy_url = f"http://{full_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+        proxy_description = f"{full_username}@{proxy_host}:{proxy_port}"
+
+        logger.info(f"🎯 Selected backbone proxy: {proxy_description}")
+        logger.info("📍 This provides stable endpoint with rotating residential IPs")
+
+        return proxy_url, proxy_description
+
+    except Exception as e:
+        logger.error(f"❌ Error selecting backbone proxy: {str(e)}")
+        # Fallback to first backbone proxy
+        fallback_url = f"http://{proxy_username}-1:{proxy_password}@p.webshare.io:10000"
+        return fallback_url, f"{proxy_username}-1@p.webshare.io:10000"
+
 
 def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
     """
-    Test the Webshare rotating proxy endpoint by making a request to httpbin.org/ip.
+    Test a backbone proxy by making a request to httpbin.org/ip.
 
     Args:
         proxy_username: Webshare proxy username
         proxy_password: Webshare proxy password
 
     Returns:
-        The IP address being used through the rotating proxy
+        The IP address being used through the backbone proxy
     """
     try:
-        logger.info("🌐 Testing Webshare rotating proxy endpoint...")
+        logger.info("🌐 Testing Webshare backbone proxy...")
 
-        # Use the rotating proxy endpoint (automatically rotates for each request)
-        proxy_url = f"http://{proxy_username}-rotate:{proxy_password}@p.webshare.io:80"
+        # Get a backbone proxy for testing
+        proxy_url, proxy_description = get_backbone_proxy(proxy_username, proxy_password)
 
         proxies = {
             'http': proxy_url,
             'https': proxy_url
         }
 
-        logger.info(f"📡 Making test request through rotating proxy: {proxy_username}-rotate@p.webshare.io:80")
+        logger.info(f"📡 Making test request through backbone proxy: {proxy_description}")
 
         # Make request to httpbin.org/ip to get the IP address
         response = requests.get('https://httpbin.org/ip', proxies=proxies, timeout=10)
@@ -63,14 +99,14 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
         if response.status_code == 200:
             ip_data = response.json()
             proxy_ip = ip_data.get('origin', 'Unknown')
-            logger.info(f"✅ Rotating proxy test successful! Using IP: {proxy_ip}")
+            logger.info(f"✅ Backbone proxy test successful! Using IP: {proxy_ip}")
             return proxy_ip
         else:
-            logger.error(f"❌ Rotating proxy test failed with status code: {response.status_code}")
+            logger.error(f"❌ Backbone proxy test failed with status code: {response.status_code}")
             return "Unknown"
 
     except Exception as e:
-        logger.error(f"❌ Rotating proxy test failed with exception: {str(e)}")
+        logger.error(f"❌ Backbone proxy test failed with exception: {str(e)}")
         return "Unknown"
 
 
@@ -103,19 +139,22 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
         logger.info(f"📝 Proxy username: {proxy_username}")
         logger.info(f"📝 Proxy username length: {len(proxy_username)}")
         logger.info(f"📝 Proxy password length: {len(proxy_password)}")
-        logger.info("🌐 Creating WebshareProxyConfig with rotating endpoint...")
+        logger.info("🌐 Creating backbone proxy configuration...")
 
-        # Test the proxy IP address before using it (using rotating endpoint)
+        # Get a backbone proxy for this request (stable endpoint + rotating IPs)
+        proxy_url, proxy_description = get_backbone_proxy(proxy_username, proxy_password)
+
+        # Test the proxy IP address before using it
         proxy_ip = test_proxy_ip(proxy_username, proxy_password)
         logger.info(f"🔍 Proxy IP test result: {proxy_ip}")
 
-        # Use WebshareProxyConfig for proper rotating proxy endpoint
-        # This automatically rotates proxies for each request as per Webshare documentation
-        proxy_config = WebshareProxyConfig(
-            proxy_username=proxy_username,
-            proxy_password=proxy_password,
+        # Use GenericProxyConfig with backbone proxy for stable endpoint
+        proxy_config = GenericProxyConfig(
+            http_url=proxy_url,
+            https_url=proxy_url,
         )
-        logger.info("✅ WebshareProxyConfig created with rotating proxy endpoint (auto-rotation enabled)")
+        logger.info(f"✅ GenericProxyConfig created with backbone proxy: {proxy_description}")
+        logger.info("📍 Stable endpoint with rotating residential IPs enabled")
 
         logger.info("🔧 STEP 2: Creating YouTubeTranscriptApi with proxy config")
         ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
