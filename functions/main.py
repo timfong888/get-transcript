@@ -235,6 +235,34 @@ def get_transcript(req: https_fn.Request) -> https_fn.Response:
 
         logger.info("✅ API key validation passed")
         
+        # Check if this is an IP check request
+        if req.method == 'GET' and req.args.get('check') == 'ip':
+            logger.info("🔍 IP check request received")
+            try:
+                response = requests.get('https://httpbin.org/ip', timeout=10)
+                if response.status_code == 200:
+                    ip_data = response.json()
+                    cloud_ip = ip_data.get('origin', 'Unknown')
+                    logger.info(f"☁️ Cloud function IP: {cloud_ip}")
+                    return https_fn.Response(
+                        json.dumps({"cloud_function_ip": cloud_ip}),
+                        status=200,
+                        headers={**headers, 'Content-Type': 'application/json'}
+                    )
+                else:
+                    return https_fn.Response(
+                        json.dumps({"error": "Failed to get IP"}),
+                        status=500,
+                        headers={**headers, 'Content-Type': 'application/json'}
+                    )
+            except Exception as e:
+                logger.error(f"Error getting IP: {str(e)}")
+                return https_fn.Response(
+                    json.dumps({"error": str(e)}),
+                    status=500,
+                    headers={**headers, 'Content-Type': 'application/json'}
+                )
+
         # Extract video ID from request
         logger.info("📹 STEP 3: Extracting video ID from request...")
         video_id = None
