@@ -1,5 +1,6 @@
 import json
 import logging
+import requests
 from typing import Dict, Any
 from firebase_functions import https_fn
 from firebase_functions.params import SecretParam
@@ -29,6 +30,48 @@ def validate_video_id(video_id: str) -> bool:
 
     allowed_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_')
     return all(c in allowed_chars for c in video_id)
+
+
+def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
+    """
+    Test the Webshare proxy by making a request to httpbin.org/ip to get the actual IP being used.
+
+    Args:
+        proxy_username: Webshare proxy username
+        proxy_password: Webshare proxy password
+
+    Returns:
+        The IP address being used through the proxy
+    """
+    try:
+        logger.info("🌐 Testing Webshare proxy IP address...")
+
+        # Construct proxy URL (Webshare automatically adds -rotate suffix)
+        proxy_url = f"http://{proxy_username}-rotate:{proxy_password}@p.webshare.io:80"
+
+        proxies = {
+            'http': proxy_url,
+            'https': proxy_url
+        }
+
+        logger.info(f"📡 Making test request through proxy: {proxy_username}-rotate@p.webshare.io:80")
+
+        # Make request to httpbin.org/ip to get the IP address
+        response = requests.get('https://httpbin.org/ip', proxies=proxies, timeout=10)
+
+        if response.status_code == 200:
+            ip_data = response.json()
+            proxy_ip = ip_data.get('origin', 'Unknown')
+            logger.info(f"✅ Proxy test successful! Using IP: {proxy_ip}")
+            return proxy_ip
+        else:
+            logger.error(f"❌ Proxy test failed with status code: {response.status_code}")
+            return "Unknown"
+
+    except Exception as e:
+        logger.error(f"❌ Proxy test failed with exception: {str(e)}")
+        return "Unknown"
+
 
 def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str) -> Dict[str, Any]:
     """
@@ -60,6 +103,10 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
         logger.info(f"📝 Proxy username length: {len(proxy_username)}")
         logger.info(f"📝 Proxy password length: {len(proxy_password)}")
         logger.info("🌐 Creating WebshareProxyConfig instance...")
+
+        # Test the proxy IP address before using it
+        proxy_ip = test_proxy_ip(proxy_username, proxy_password)
+        logger.info(f"🔍 Proxy IP test result: {proxy_ip}")
 
         proxy_config = WebshareProxyConfig(
             proxy_username=proxy_username,
