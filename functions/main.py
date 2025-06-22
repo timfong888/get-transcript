@@ -46,7 +46,7 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
     try:
         logger.info("🌐 Testing Webshare proxy IP address...")
 
-        # Construct proxy URL (Webshare automatically adds -rotate suffix)
+        # Construct residential proxy URL (Webshare automatically adds -rotate suffix)
         proxy_url = f"http://{proxy_username}-rotate:{proxy_password}@p.webshare.io:80"
 
         proxies = {
@@ -54,7 +54,7 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
             'https': proxy_url
         }
 
-        logger.info(f"📡 Making test request through proxy: {proxy_username}-rotate@p.webshare.io:80")
+        logger.info(f"📡 Making test request through residential proxy: {proxy_username}-rotate@p.webshare.io:80")
 
         # Make request to httpbin.org/ip to get the IP address
         response = requests.get('https://httpbin.org/ip', proxies=proxies, timeout=10)
@@ -112,7 +112,7 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
             proxy_username=proxy_username,
             proxy_password=proxy_password,
         )
-        logger.info("✅ WebshareProxyConfig created successfully")
+        logger.info("✅ WebshareProxyConfig created successfully for residential proxies")
 
         logger.info("🔧 STEP 2: Creating YouTubeTranscriptApi with proxy config")
         ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
