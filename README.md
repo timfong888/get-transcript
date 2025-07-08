@@ -144,17 +144,100 @@ curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
 ✅ **Full Container Control**: No network restrictions
 ✅ **Fast Deployment**: ~10 minute migration time
 
-### **Deployment Commands** (for reference)
+### **Deployment Setup & Commands**
+
+#### **Initial Fly.io Setup**
 ```bash
-# Install Fly.io CLI
+# 1. Install Fly.io CLI
 brew install flyctl
 
-# Login and deploy (already done)
+# 2. Login to Fly.io (opens browser for authentication)
 flyctl auth login
+
+# 3. Initialize app (creates fly.toml)
+flyctl launch --name get-transcript --region sjc
+
+# 4. Set required secrets (replace with your actual values)
+flyctl secrets set API_KEY=your_secure_api_key_here
+flyctl secrets set WEBSHARE_USERNAME=your_webshare_username
+flyctl secrets set WEBSHARE_PASSWORD=your_webshare_password
+
+# 5. Deploy the application
+flyctl deploy
+```
+
+#### **Ongoing Deployment Commands**
+```bash
+# Deploy updates
 flyctl deploy
 
-# Set secrets (already configured)
-flyctl secrets set WEBSHARE_USERNAME=xxx WEBSHARE_PASSWORD=xxx API_KEY=xxx
+# View live logs
+flyctl logs
+
+# Check app status
+flyctl status
+
+# Update secrets (when needed)
+flyctl secrets set API_KEY=new_api_key_here
+
+# Scale app (cost optimization)
+flyctl scale count 1 --region sjc
+```
+
+#### **Development Workflow**
+```bash
+# 1. Make code changes
+# 2. Test locally (optional)
+python app.py
+
+# 3. Deploy to Fly.io
+flyctl deploy
+
+# 4. Monitor deployment
+flyctl logs --follow
+```
+
+### **Required Files for Fly.io Deployment**
+```
+├── fly.toml              # Fly.io configuration
+├── Dockerfile            # Container build instructions
+├── app.py               # FastAPI application
+├── requirements.txt     # Python dependencies
+└── README.md           # This documentation
+```
+
+#### **Key Configuration Files**
+
+**fly.toml** - Fly.io app configuration:
+```toml
+app = "get-transcript"
+primary_region = "sjc"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+```
+
+**Dockerfile** - Container configuration:
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8080
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
 ```
 
 ### **Branch Structure**
@@ -227,16 +310,50 @@ flyctl status
 1. **401 Unauthorized**: Check Authorization header format
 2. **404 Not Found**: Video may not have transcripts or be private
 3. **500 Internal Error**: Check Fly.io logs with `flyctl logs`
+4. **Deployment Fails**: Verify secrets are set correctly
+5. **App Won't Start**: Check Dockerfile and requirements.txt
+
+### **Fly.io Specific Troubleshooting**
+```bash
+# Check app status
+flyctl status
+
+# View live logs
+flyctl logs --follow
+
+# Check secrets (lists names only, not values)
+flyctl secrets list
+
+# Restart app
+flyctl machine restart
+
+# Check machine status
+flyctl machine list
+
+# SSH into running container (for debugging)
+flyctl ssh console
+```
 
 ### **Quick Diagnostics**
 ```bash
-# Test health endpoint
+# Test health endpoint (public)
 curl "https://get-transcript.fly.dev/health"
 
-# Test with known working video
+# Test with your API key (authenticated)
 curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ"
+
+# Check if secrets are properly set
+flyctl secrets list
+# Should show: API_KEY, WEBSHARE_USERNAME, WEBSHARE_PASSWORD
 ```
+
+### **Common Deployment Issues**
+1. **Secret Not Set**: `flyctl secrets set KEY=value`
+2. **Wrong Region**: App deployed in `sjc` (San Jose)
+3. **Port Issues**: App runs on port 8080 internally
+4. **Memory Limits**: 1GB RAM allocated (increase if needed)
+5. **Auto-scaling**: Min 0 machines (cost optimized)
 
 ## 📝 **Changelog**
 
