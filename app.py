@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # FastAPI app
-app = FastAPI(title="YouTube Transcript API", version="1.0.0")
+app = FastAPI(title="YouTube Transcript API", version="1.1.1")
 
 # Add CORS middleware
 app.add_middleware(
