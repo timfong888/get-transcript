@@ -28,3 +28,8 @@ Include the relevant bug log line without revealing secrets if possible.  Ideall
 
 ## Make sure that Issues are included as references to the Changelog ('/aiDocs/prompts/changelog-prompt.md`)
 
+## Security
+When I include stacktraces or log-lines, make sure to redact {redacted} any secrets, the project_id, anything that could be used by a hacker to infiltrate or abuse the system.
+
+
+
