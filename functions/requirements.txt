@@ -1,5 +1,5 @@
 firebase-functions
-youtube-transcript-api==1.1.0
+youtube-transcript-api==1.1.1
 google-cloud-secret-manager==2.18.1
 google-cloud-logging==3.8.0
 requests==2.31.0

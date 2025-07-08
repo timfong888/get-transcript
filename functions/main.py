@@ -74,9 +74,40 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
         return "Unknown"
 
 
+def log_api_request_ip(session, proxy_username: str, proxy_password: str) -> str:
+    """
+    Log the actual IP address used by the YouTube Transcript API by intercepting requests.
+
+    Args:
+        session: The requests session used by the API
+        proxy_username: Proxy username for logging context
+        proxy_password: Proxy password for logging context
+
+    Returns:
+        The IP address used by the API, or "Unknown" if unable to determine
+    """
+    try:
+        # Make a test request using the same session that the API will use
+        logger.info("🔍 Testing actual API session IP...")
+        response = session.get('https://httpbin.org/ip', timeout=10)
+
+        if response.status_code == 200:
+            ip_data = response.json()
+            api_ip = ip_data.get('origin', 'Unknown')
+            logger.info(f"✅ YouTube Transcript API will use IP: {api_ip}")
+            return api_ip
+        else:
+            logger.error(f"❌ API session IP test failed with status code: {response.status_code}")
+            return "Unknown"
+
+    except Exception as e:
+        logger.error(f"❌ API session IP test failed with exception: {str(e)}")
+        return "Unknown"
+
+
 def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str) -> Dict[str, Any]:
     """
-    Retrieve transcript for a YouTube video.
+    Retrieve transcript for a YouTube video using the simplified 1.1.1 API.
 
     Args:
         video_id: YouTube video ID
@@ -110,7 +141,6 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
         logger.info(f"🔍 Proxy IP test result: {proxy_ip}")
 
         # Use WebshareProxyConfig for proper Webshare residential proxy handling
-        # This uses the rotating endpoint with automatic rotation
         proxy_config = WebshareProxyConfig(
             proxy_username=proxy_username,
             proxy_password=proxy_password,
@@ -122,49 +152,45 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
         ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
         logger.info("✅ YouTubeTranscriptApi instance created with Webshare proxy")
 
-        # Fetch transcript using the proxied API instance
-        logger.info("🔧 STEP 3: Fetching transcript list via proxy...")
-        transcript_list = ytt_api.list_transcripts(video_id)
-        logger.info("✅ Transcript list retrieved successfully via proxy")
+        # Log the actual IP that will be used by the API
+        if hasattr(ytt_api, '_http_client') and ytt_api._http_client:
+            api_ip = log_api_request_ip(ytt_api._http_client, proxy_username, proxy_password)
+            logger.info(f"🌐 Actual API IP: {api_ip}")
+        else:
+            logger.warning("⚠️ Unable to access API session for IP logging")
 
-        # Try to get English transcript first, then any available transcript
-        logger.info("🔧 STEP 4: Finding appropriate transcript...")
+        # Use the simplified 1.1.1 API - fetch transcript directly
+        logger.info("🔧 STEP 3: Fetching transcript using simplified API...")
         try:
-            transcript = transcript_list.find_transcript(['en'])
-            logger.info("✅ Found English transcript")
+            # Try English first, then fallback to any available language
+            fetched_transcript = ytt_api.fetch(video_id, languages=['en'])
+            logger.info("✅ Found English transcript using simplified API")
         except NoTranscriptFound:
-            logger.info("⚠️ No English transcript found, looking for alternatives...")
-            # Get the first available transcript
-            available_transcripts = list(transcript_list)
-            if not available_transcripts:
-                logger.error("❌ No transcripts available for this video")
+            logger.info("⚠️ No English transcript found, trying any available language...")
+            try:
+                fetched_transcript = ytt_api.fetch(video_id)
+                logger.info(f"✅ Found transcript in language: {fetched_transcript.language}")
+            except Exception as e:
+                logger.error(f"❌ No transcripts available for this video: {str(e)}")
                 raise CouldNotRetrieveTranscript(video_id)
-            transcript = available_transcripts[0]
-            logger.info(f"✅ Using alternative transcript: {transcript.language_code}")
 
-        # Fetch the actual transcript data
-        logger.info("🔧 STEP 5: Fetching transcript data...")
-        transcript_data = transcript.fetch()
-        logger.info(f"✅ Transcript data retrieved: {len(transcript_data)} entries")
+        logger.info(f"✅ Transcript retrieved: {len(fetched_transcript)} entries")
 
-        # Combine all transcript text
-        logger.info("🔧 STEP 6: Processing transcript data...")
-        full_text = ' '.join([entry.text for entry in transcript_data])
+        # Process transcript data
+        logger.info("🔧 STEP 4: Processing transcript data...")
+        full_text = ' '.join([snippet.text for snippet in fetched_transcript])
         logger.info(f"✅ Transcript text combined: {len(full_text)} characters")
-
-        # Get basic video info from transcript metadata if available
-        video_title = getattr(transcript, 'video_title', f"Video {video_id}")
 
         result = {
             "transcript": full_text,
-            "language": transcript.language_code,
-            "title": video_title,
+            "language": fetched_transcript.language_code,
+            "title": f"Video {video_id}",  # Title not available in simplified API
             "channel": "Unknown Channel",  # Channel info not available from transcript API
             "videoId": video_id
         }
 
         logger.info(f"🎉 SUCCESS: Retrieved transcript for video {video_id} via Webshare proxy")
-        logger.info(f"📊 Final result: {len(transcript_data)} entries, {len(full_text)} chars, language: {transcript.language_code}")
+        logger.info(f"📊 Final result: {len(fetched_transcript)} entries, {len(full_text)} chars, language: {fetched_transcript.language_code}")
         return result
 
     except Exception as e:
