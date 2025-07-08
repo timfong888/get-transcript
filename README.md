@@ -220,7 +220,7 @@ flyctl secrets import < secrets.txt
 For Webshare backbone connections, the username does NOT need the `-rotate` suffix:
 ```bash
 # Backbone connection (no -rotate suffix)
-flyctl secrets set WEBSHARE_USERNAME=pafkmsbh
+flyctl secrets set WEBSHARE_USERNAME=your_webshare_username
 
 # After updating secrets, redeploy to apply changes
 flyctl deploy
@@ -394,8 +394,8 @@ flyctl secrets list
 1. **Secret Not Set**: `flyctl secrets set KEY=value` then `flyctl deploy`
 2. **Secret Not Applied**: Must run `flyctl deploy` after setting secrets
 3. **Wrong Username Format**:
-   - Backbone connection: `pafkmsbh` (no suffix)
-   - Rotating proxy: `pafkmsbh-rotate` (with suffix)
+   - Backbone connection: `your_username` (no suffix)
+   - Rotating proxy: `your_username-rotate` (with suffix)
 4. **Wrong Region**: App deployed in `sjc` (San Jose)
 5. **Port Issues**: App runs on port 8080 internally
 6. **Memory Limits**: 1GB RAM allocated (increase if needed)

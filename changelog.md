@@ -65,10 +65,7 @@ flyctl secrets set WEBSHARE_USERNAME=xxx WEBSHARE_PASSWORD=xxx API_KEY=xxx
   - `CREDENTIAL_VERIFICATION.md`: CLI commands for credential verification and troubleshooting
 - Cleaned up unused imports in Python files
 - Successfully tested local configuration with Webshare proxy
-- Secured Webshare credentials in Firebase Secret Manager:
-  - Username: `pafkmsbh` (without -rotate suffix)
-  - Password: `mb73d2wpp3rl`
-  - Domain: `p.webshare.io:80`
+- Secured Webshare credentials in Firebase Secret Manager (credentials stored securely)
 
 ### Technical Improvements
 - Enhanced proxy reliability with Webshare's residential proxy network
