@@ -61,15 +61,15 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
     """Test the Webshare rotating proxy by making a request to httpbin.org/ip."""
     try:
         logger.info("🌐 Testing Webshare rotating proxy...")
-        
+
         # Use the rotating proxy endpoint (same as WebshareProxyConfig uses)
         proxy_url = f"http://{proxy_username}-rotate:{proxy_password}@p.webshare.io:80"
-        
+
         proxies = {
             'http': proxy_url,
             'https': proxy_url
         }
-        
+
         logger.info(f"📡 Making test request through rotating proxy: {proxy_username}-rotate@p.webshare.io:80")
         
         # Make request to httpbin.org/ip to get the IP address
@@ -83,7 +83,7 @@ def test_proxy_ip(proxy_username: str, proxy_password: str) -> str:
         else:
             logger.error(f"❌ Rotating proxy test failed with status code: {response.status_code}")
             return "Unknown"
-            
+
     except Exception as e:
         logger.error(f"❌ Rotating proxy test failed with exception: {str(e)}")
         return "Unknown"
