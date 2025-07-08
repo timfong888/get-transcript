@@ -11,12 +11,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app.py .
+COPY logging_config.py .
 
 # Expose port 8080 (Fly.io default)
 EXPOSE 8080
 
-# Set environment variable for port
+# Set environment variables
 ENV PORT=8080
+ENV ENVIRONMENT=production
 
 # Run the application
 CMD ["python", "app.py"]

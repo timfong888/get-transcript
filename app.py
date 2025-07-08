@@ -16,10 +16,10 @@ from youtube_transcript_api._errors import (
     RequestBlocked,
     CouldNotRetrieveTranscript
 )
+from logging_config import setup_logging, get_request_id, set_request_id, log_with_context
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging with Google Cloud Logging integration
+logger = setup_logging("get-transcript", os.getenv("LOG_LEVEL", "INFO"))
 
 # FastAPI app
 app = FastAPI(title="YouTube Transcript API", version="1.1.1")
@@ -245,16 +245,24 @@ async def get_transcript_post(request: Request, body: Optional[TranscriptRequest
 
 async def handle_transcript_request(request: Request, video_id: Optional[str], check: Optional[str]):
     """Handle transcript request logic."""
-    logger.info("=== NEW REQUEST ===")
-    logger.info(f"🌐 Request method: {request.method}")
-    logger.info(f"🌐 Request URL: {request.url}")
+    # Generate and set request ID for correlation
+    request_id = get_request_id()
+    set_request_id(request_id)
+
+    log_with_context(logger, "info", "=== NEW REQUEST ===", request_id=request_id)
+    log_with_context(logger, "info", f"🌐 Request method: {request.method}",
+                     request_id=request_id, method=request.method)
+    log_with_context(logger, "info", f"🌐 Request URL: {request.url}",
+                     request_id=request_id, url=str(request.url))
     
     # Check authorization
     authorization = request.headers.get("authorization")
-    logger.info("🔐 STEP 1: Checking API key authorization...")
-    
+    log_with_context(logger, "info", "🔐 STEP 1: Checking API key authorization...",
+                     request_id=request_id)
+
     if not verify_api_key(authorization):
-        logger.warning("❌ Unauthorized request - invalid or missing API key")
+        log_with_context(logger, "warning", "❌ Unauthorized request - invalid or missing API key",
+                         request_id=request_id, api_key_valid=False)
         raise HTTPException(
             status_code=401,
             detail={
@@ -262,8 +270,9 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
                 "message": "Valid API key required in Authorization header"
             }
         )
-    
-    logger.info("✅ API key authorization successful")
+
+    log_with_context(logger, "info", "✅ API key authorization successful",
+                     request_id=request_id, api_key_valid=True)
     
     # Check if this is an IP check request
     if check == 'ip':
@@ -283,7 +292,8 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
     
     # Validate video ID
     if not video_id:
-        logger.error("❌ Missing video ID in request")
+        log_with_context(logger, "error", "❌ Missing video ID in request",
+                         request_id=request_id)
         raise HTTPException(
             status_code=400,
             detail={
@@ -291,8 +301,9 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
                 "message": "videoId parameter is required"
             }
         )
-    
-    logger.info(f"✅ Video ID extracted: {video_id}")
+
+    log_with_context(logger, "info", f"✅ Video ID extracted: {video_id}",
+                     request_id=request_id, video_id=video_id)
     
     # Get transcript using proxy
     logger.info("🔧 STEP 4: Retrieving proxy credentials from environment...")
@@ -310,14 +321,17 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
     logger.info(f"✅ Proxy credentials retrieved - username: {WEBSHARE_USERNAME}")
     
     try:
-        logger.info("🎬 STEP 5: Calling get_video_transcript...")
+        log_with_context(logger, "info", "🎬 STEP 5: Calling get_video_transcript...",
+                         request_id=request_id, video_id=video_id)
         result = get_video_transcript(video_id, WEBSHARE_USERNAME, WEBSHARE_PASSWORD)
-        
-        logger.info(f"🎉 Successfully processed request for video {video_id}")
+
+        log_with_context(logger, "info", f"🎉 Successfully processed request for video {video_id}",
+                         request_id=request_id, video_id=video_id, success=True)
         return result
-        
+
     except ValueError as e:
-        logger.warning(f"Invalid request: {str(e)}")
+        log_with_context(logger, "warning", f"Invalid request: {str(e)}",
+                         request_id=request_id, video_id=video_id, error_type="INVALID_VIDEO_ID")
         raise HTTPException(
             status_code=400,
             detail={
@@ -325,9 +339,10 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
                 "message": str(e)
             }
         )
-    
+
     except (TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript) as e:
-        logger.info(f"No transcript available for video {video_id}: {str(e)}")
+        log_with_context(logger, "info", f"No transcript available for video {video_id}: {str(e)}",
+                         request_id=request_id, video_id=video_id, error_type="TRANSCRIPT_NOT_AVAILABLE")
         raise HTTPException(
             status_code=404,
             detail={
@@ -338,7 +353,9 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
         )
     
     except Exception as e:
-        logger.error(f"❌ Unexpected error: {str(e)}")
+        log_with_context(logger, "error", f"❌ Unexpected error: {str(e)}",
+                         request_id=request_id, video_id=video_id,
+                         error_type="INTERNAL_ERROR", exception=str(e))
         raise HTTPException(
             status_code=500,
             detail={

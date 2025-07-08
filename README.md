@@ -324,10 +324,29 @@ flyctl status
 ```
 
 ### **Application Logging**
-- **Info Level**: Successful requests, proxy IP rotation
+- **Info Level**: Successful requests, proxy IP rotation, request correlation
 - **Warning Level**: Authentication failures, invalid requests
-- **Error Level**: Internal errors, proxy failures
-- **Integration**: Can be configured to send to Google Cloud Logging if needed
+- **Error Level**: Internal errors, proxy failures, exceptions with context
+- **Structured Logging**: JSON format with request IDs, video IDs, and business context
+- **Google Cloud Integration**: ✅ Configured to send logs to Google Cloud Logging
+- **Request Correlation**: Each request gets a unique ID for end-to-end tracing
+- **Environment Aware**: Automatically detects development vs production environments
+
+#### **Log Structure**
+```json
+{
+  "timestamp": "2025-01-08T12:00:00.000Z",
+  "severity": "INFO",
+  "message": "✅ Successfully processed request",
+  "request_id": "123e4567-e89b-12d3-a456-426614174000",
+  "video_id": "dQw4w9WgXcQ",
+  "service": "get-transcript",
+  "environment": "production"
+}
+```
+
+#### **Google Cloud Logging Setup**
+See [setup-gcp-logging.md](./setup-gcp-logging.md) for complete configuration instructions.
 
 ## 🔒 **Security**
 
