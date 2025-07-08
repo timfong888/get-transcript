@@ -184,6 +184,48 @@ flyctl secrets set API_KEY=new_api_key_here
 flyctl scale count 1 --region sjc
 ```
 
+#### **🔐 Secrets Management**
+
+**Setting Secrets:**
+```bash
+# Set individual secrets
+flyctl secrets set API_KEY=your_secure_api_key_here
+flyctl secrets set WEBSHARE_USERNAME=your_username
+flyctl secrets set WEBSHARE_PASSWORD=your_password
+
+# Set multiple secrets at once
+flyctl secrets set API_KEY=key WEBSHARE_USERNAME=user WEBSHARE_PASSWORD=pass
+```
+
+**Managing Secrets:**
+```bash
+# List all secrets (names only, values are encrypted)
+flyctl secrets list
+
+# Remove a secret
+flyctl secrets unset SECRET_NAME
+
+# Import secrets from file (format: NAME=VALUE per line)
+flyctl secrets import < secrets.txt
+```
+
+**⚠️ Important Notes:**
+- **Secret values cannot be retrieved** once set (security feature)
+- **Deployment required**: Run `flyctl deploy` after setting secrets to apply changes
+- **Case sensitive**: Secret names are stored exactly as provided
+- **Environment variables**: Secrets are available as ENV vars in the app
+- **Automatic restart**: Setting secrets triggers machine restart
+
+**Backbone Connection Update:**
+For Webshare backbone connections, the username does NOT need the `-rotate` suffix:
+```bash
+# Backbone connection (no -rotate suffix)
+flyctl secrets set WEBSHARE_USERNAME=pafkmsbh
+
+# After updating secrets, redeploy to apply changes
+flyctl deploy
+```
+
 #### **Development Workflow**
 ```bash
 # 1. Make code changes
@@ -349,11 +391,30 @@ flyctl secrets list
 ```
 
 ### **Common Deployment Issues**
-1. **Secret Not Set**: `flyctl secrets set KEY=value`
-2. **Wrong Region**: App deployed in `sjc` (San Jose)
-3. **Port Issues**: App runs on port 8080 internally
-4. **Memory Limits**: 1GB RAM allocated (increase if needed)
-5. **Auto-scaling**: Min 0 machines (cost optimized)
+1. **Secret Not Set**: `flyctl secrets set KEY=value` then `flyctl deploy`
+2. **Secret Not Applied**: Must run `flyctl deploy` after setting secrets
+3. **Wrong Username Format**:
+   - Backbone connection: `pafkmsbh` (no suffix)
+   - Rotating proxy: `pafkmsbh-rotate` (with suffix)
+4. **Wrong Region**: App deployed in `sjc` (San Jose)
+5. **Port Issues**: App runs on port 8080 internally
+6. **Memory Limits**: 1GB RAM allocated (increase if needed)
+7. **Auto-scaling**: Min 0 machines (cost optimized)
+
+### **Secrets Troubleshooting**
+```bash
+# Check if secrets exist
+flyctl secrets list
+
+# Verify secret names (case sensitive)
+# Should show: API_KEY, WEBSHARE_USERNAME, WEBSHARE_PASSWORD
+
+# If secrets are set but not working:
+flyctl deploy  # Redeploy to apply secret changes
+
+# Check if app is using secrets correctly
+flyctl logs --follow  # Look for authentication errors
+```
 
 ## 📝 **Changelog**
 
