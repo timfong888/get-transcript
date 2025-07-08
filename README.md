@@ -11,8 +11,10 @@ https://get-transcript.fly.dev/get_transcript
 
 **Required**: All requests must include an API key in the Authorization header:
 ```
-Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8
+Authorization: Bearer YOUR_API_KEY_HERE
 ```
+
+⚠️ **Security Note**: Replace `YOUR_API_KEY_HERE` with your actual API key. Never commit real API keys to public repositories.
 
 **Security**:
 - API key is required for all transcript requests
@@ -24,14 +26,14 @@ Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8
 
 ### **Method 1: GET Request**
 ```bash
-curl -H "Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8" \
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ"
 ```
 
 ### **Method 2: POST Request**
 ```bash
 curl -X POST \
-     -H "Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8" \
+     -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      -H "Content-Type: application/json" \
      -d '{"videoId": "dQw4w9WgXcQ"}' \
      "https://get-transcript.fly.dev/get_transcript"
@@ -41,7 +43,7 @@ curl -X POST \
 ```javascript
 const response = await fetch('https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ', {
   headers: {
-    'Authorization': 'Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8'
+    'Authorization': 'Bearer YOUR_API_KEY_HERE'
   }
 });
 const data = await response.json();
@@ -55,7 +57,7 @@ import requests
 response = requests.get(
     'https://get-transcript.fly.dev/get_transcript',
     params={'videoId': 'dQw4w9WgXcQ'},
-    headers={'Authorization': 'Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8'}
+    headers={'Authorization': 'Bearer YOUR_API_KEY_HERE'}
 )
 data = response.json()
 print(data['transcript'])
@@ -117,7 +119,7 @@ curl "https://get-transcript.fly.dev/health"
 
 ### **IP Check** (Authenticated)
 ```bash
-curl -H "Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8" \
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      "https://get-transcript.fly.dev/get_transcript?check=ip"
 # Returns: {"cloud_function_ip": "xxx.xxx.xxx.xxx"}
 ```
@@ -213,10 +215,11 @@ flyctl status
 - ✅ Request logging for audit trails
 
 ### **Security Notes**
-- API key is hardcoded in examples for convenience (rotate if needed)
+- ⚠️ **NEVER commit real API keys to repositories** - use environment variables or secure storage
 - No rate limiting currently implemented
 - Proxy credentials stored securely in Fly.io secrets
 - All traffic over HTTPS
+- Rotate API keys regularly for security
 
 ## 🐛 **Troubleshooting**
 
@@ -231,7 +234,7 @@ flyctl status
 curl "https://get-transcript.fly.dev/health"
 
 # Test with known working video
-curl -H "Authorization: Bearer 9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8" \
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ"
 ```
 

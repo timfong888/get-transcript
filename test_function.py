@@ -9,8 +9,8 @@ import sys
 import os
 
 # Test configuration
-FUNCTION_URL = "https://get-transcript-rdovs7os4q-uc.a.run.app"
-API_KEY = "9sZIgIcUBDh_twnPUX3wFJGBY1z-3lV_-9i0BF0kRg8"
+FUNCTION_URL = "https://get-transcript.fly.dev/get_transcript"
+API_KEY = os.getenv("API_KEY", "YOUR_API_KEY_HERE")
 
 # Test video IDs
 TEST_VIDEOS = {
@@ -124,8 +124,9 @@ def main():
     print(f"Function URL: {FUNCTION_URL}")
     print(f"API Key: {API_KEY[:10]}..." if API_KEY != "your-api-key-here" else "API Key: NOT SET")
     
-    if API_KEY == "your-api-key-here":
-        print("\nERROR: Please update the API_KEY variable in this script")
+    if API_KEY == "YOUR_API_KEY_HERE":
+        print("\nERROR: Please set the API_KEY environment variable or update the script")
+        print("Usage: API_KEY=your_actual_key python test_function.py")
         sys.exit(1)
     
     if FUNCTION_URL == "https://your-region-your-project.cloudfunctions.net/get_transcript":
