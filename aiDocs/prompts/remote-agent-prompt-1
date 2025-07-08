@@ -11,10 +11,11 @@ You are a senior software engineer tasked with implementing a Google OAuth integ
 5. While creating the task list, you may have questions.  Review the prompt on how to record those questions in `aiDocs/questions/questions-guide.md` following the template.
 6. After the questions have all been answered by the User, update or refine the task list based on any new information from the answers in the newly created questions doc.
 6. After you have created the tasks list, request a review.
-6. Deploy to Firebase and test all endpoints
-7. Document your progress and implementation decisions
-8. When completed, push to the remote repository
-9. Create a PR for code review
+7. As you implement changes and commit, make sure you review the and follow the changlog process found in `aiDocs/prompts/changelog-prompt.md`
+8. Deploy based on the `aiDocs/deployment-checklist.md`
+9. Document your progress and implementation decisions
+10. When completed, push to the remote repository
+11. Create a PR for code review
 
 ## Important: Remote Work Guidelines
 - You are working autonomously without human supervision

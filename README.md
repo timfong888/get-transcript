@@ -1,284 +1,435 @@
-# Get Transcript - YouTube Transcript Extraction Service
+# Get Transcript - YouTube Transcript API
 
-A Firebase Functions service that extracts transcripts from YouTube videos using rotating residential proxies. This service provides a REST API for retrieving video transcripts with proper authentication, error handling, and monitoring.
+A FastAPI service deployed on Fly.io that extracts transcripts from YouTube videos using Webshare residential proxies. Provides a REST API with authentication, error handling, and proxy support that works reliably without 407 authentication errors.
 
-## Features
-
-- 🎥 Extract transcripts from YouTube videos
-- 🔒 Secure authentication with API keys
-- 🌐 Rotating residential proxy support (Decodo)
-- 📊 Comprehensive error handling and logging
-- 🚀 Serverless deployment on Firebase Functions
-- 🔐 Secure credential management with Google Secret Manager
-- ✅ CORS support for web applications
-
-## API Documentation
-
-### Endpoint
+## 🚀 **Live API Endpoint**
 ```
-GET/POST https://your-region-your-project.cloudfunctions.net/get_transcript
+https://get-transcript.fly.dev/get_transcript
 ```
 
-### Authentication
-All requests require an API key in the Authorization header:
+## 🔑 **Authentication Policy**
+
+**Required**: All requests must include an API key in the Authorization header:
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer YOUR_API_KEY_HERE
 ```
 
-### Request Formats
+⚠️ **Security Note**: Replace `YOUR_API_KEY_HERE` with your actual API key. Never commit real API keys to public repositories.
 
-#### GET Request
+**Security**:
+- API key is required for all transcript requests
+- Health check endpoint (`/health`) is public
+- CORS enabled for web browser requests
+- No rate limiting currently implemented
+
+## 📋 **How to Use**
+
+### **Method 1: GET Request**
 ```bash
-curl -X GET "https://your-function-url/get_transcript?videoId=dQw4w9WgXcQ" \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ"
 ```
 
-#### POST Request
+### **Method 2: POST Request**
 ```bash
-curl -X POST "https://your-function-url/get_transcript" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"videoId": "dQw4w9WgXcQ"}'
+curl -X POST \
+     -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"videoId": "dQw4w9WgXcQ"}' \
+     "https://get-transcript.fly.dev/get_transcript"
 ```
 
-### Response Format
+### **JavaScript Example**
+```javascript
+const response = await fetch('https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ', {
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY_HERE'
+  }
+});
+const data = await response.json();
+console.log(data.transcript);
+```
 
-#### Success Response (200)
+### **Python Example**
+```python
+import requests
+
+response = requests.get(
+    'https://get-transcript.fly.dev/get_transcript',
+    params={'videoId': 'dQw4w9WgXcQ'},
+    headers={'Authorization': 'Bearer YOUR_API_KEY_HERE'}
+)
+data = response.json()
+print(data['transcript'])
+```
+
+## 📊 **Response Format**
+
+### **Success Response (200)**
 ```json
 {
-  "transcript": "Never gonna give you up, never gonna let you down...",
+  "transcript": "♪ We're no strangers to love ♪ ♪ You know the rules and so do I ♪...",
   "language": "en",
-  "title": "Rick Astley - Never Gonna Give You Up",
-  "channel": "RickAstleyVEVO",
+  "title": "Video dQw4w9WgXcQ",
+  "channel": "Unknown Channel",
   "videoId": "dQw4w9WgXcQ"
 }
 ```
 
-#### Error Responses
-
-**400 - Bad Request**
-```json
-{
-  "error": "INVALID_VIDEO_ID",
-  "message": "Invalid video ID format"
-}
-```
+### **Error Responses**
 
 **401 - Unauthorized**
 ```json
 {
-  "error": "UNAUTHORIZED",
-  "message": "Invalid API key"
+  "detail": {
+    "error": "UNAUTHORIZED",
+    "message": "Valid API key required in Authorization header"
+  }
+}
+```
+
+**400 - Bad Request**
+```json
+{
+  "detail": {
+    "error": "MISSING_VIDEO_ID",
+    "message": "videoId parameter is required"
+  }
 }
 ```
 
 **404 - Not Found**
 ```json
 {
-  "error": "TRANSCRIPT_NOT_AVAILABLE",
-  "message": "No transcript available for this video",
-  "videoId": "example123"
+  "detail": {
+    "error": "TRANSCRIPT_NOT_AVAILABLE",
+    "message": "No transcript available for this video",
+    "videoId": "someVideoId"
+  }
 }
 ```
 
-**429 - Rate Limited**
-```json
-{
-  "error": "RATE_LIMITED",
-  "message": "Too many requests, please try again later",
-  "videoId": "example123"
-}
-```
+## 🔍 **Additional Endpoints**
 
-**500 - Internal Server Error**
-```json
-{
-  "error": "INTERNAL_ERROR",
-  "message": "An internal error occurred"
-}
-```
-
-## Deployment Guide
-
-### Prerequisites
-
-1. **Firebase CLI**: Install the Firebase CLI
-   ```bash
-   npm install -g firebase-tools
-   ```
-
-2. **Google Cloud Project**: Create a new Google Cloud project or use existing one
-
-3. **Firebase Project**: Initialize Firebase in your project
-   ```bash
-   firebase login
-   firebase init functions
-   ```
-
-### Step-by-Step Deployment
-
-1. **Clone and Setup**
-   ```bash
-   git clone https://github.com/your-username/get-transcript.git
-   cd get-transcript
-   ```
-
-2. **Configure Firebase Project**
-   ```bash
-   # Update .firebaserc with your project ID
-   firebase use your-project-id
-   ```
-
-3. **Set Up Secrets**
-   ```bash
-   # Run the setup script to configure secrets
-   ./setup-secrets.sh
-   ```
-   
-   This will set up:
-   - `PROXY_USERNAME`: Webshare proxy username
-   - `PROXY_PASSWORD`: Webshare proxy password
-   - `API_KEY`: Your custom API key for authentication
-
-4. **Deploy the Function**
-   ```bash
-   firebase deploy --only functions
-   ```
-
-5. **Test the Deployment**
-   ```bash
-   # Update test_function.py with your function URL and API key
-   python3 test_function.py
-   ```
-
-### Manual Secret Setup
-
-If you prefer to set up secrets manually:
-
+### **Health Check** (Public)
 ```bash
-# Set proxy credentials (replace with your actual Webshare credentials)
-echo "YOUR_WEBSHARE_USERNAME" | firebase functions:secrets:set PROXY_USERNAME
-echo "YOUR_WEBSHARE_PASSWORD" | firebase functions:secrets:set PROXY_PASSWORD
-
-# Set your API key
-echo "your-secure-api-key" | firebase functions:secrets:set API_KEY
+curl "https://get-transcript.fly.dev/health"
+# Returns: {"status": "healthy", "service": "youtube-transcript-api"}
 ```
 
-## Configuration
+### **IP Check** (Authenticated)
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     "https://get-transcript.fly.dev/get_transcript?check=ip"
+# Returns: {"cloud_function_ip": "xxx.xxx.xxx.xxx"}
+```
 
-### Environment Variables
-
-The function uses the following configuration:
-- **Memory**: 512MB
-- **Timeout**: 60 seconds
-- **Runtime**: Python 3.11
-
-### Proxy Configuration
-
-The service uses Webshare rotating residential proxies:
-- **Provider**: Webshare
-- **Endpoint**: p.webshare.io:80 (automatically configured)
-- **Authentication**: Username/Password (stored in Secret Manager)
-- **Features**: Automatic IP rotation, optimized for YouTube
-
-## Testing
-
-### Local Testing
-
-1. **Install Dependencies**
-   ```bash
-   cd functions
-   pip install -r requirements.txt
-   ```
-
-2. **Run Tests**
-   ```bash
-   # Update test_function.py with your function URL and API key
-   python3 ../test_function.py
-   ```
-
-### Test Video IDs
-
-Use these video IDs for testing:
-- `dQw4w9WgXcQ` - Rick Astley (has transcript)
-- `jNQXAC9IVRw` - Me at the zoo (first YouTube video)
+## 🧪 **Test Video IDs**
+- `dQw4w9WgXcQ` - Rick Astley "Never Gonna Give You Up" (has transcript)
+- `jNQXAC9IVRw` - "Me at the zoo" (first YouTube video)
 - `invalid123` - Invalid format (for error testing)
 
-## Monitoring and Logging
+## 🚀 **Deployment Architecture**
 
-### Google Cloud Logging
+### **Current Deployment: Fly.io**
+- **Platform**: Fly.io (migrated from Firebase Functions)
+- **Framework**: FastAPI (converted from Firebase Functions)
+- **Region**: San Jose, California (US)
+- **Machine**: shared-cpu-1x, 1GB RAM (smallest/cheapest)
+- **Proxy**: Webshare residential proxies (working perfectly!)
 
-All requests and errors are logged to Google Cloud Logging:
-- **Info Level**: Successful requests
+### **Why Fly.io?**
+✅ **Solved 407 Proxy Authentication Errors**: Google Cloud Functions blocked proxy auth, Fly.io allows it
+✅ **Cost Effective**: Lower costs than Firebase Functions
+✅ **Full Container Control**: No network restrictions
+✅ **Fast Deployment**: ~10 minute migration time
+
+### **Deployment Setup & Commands**
+
+#### **Initial Fly.io Setup**
+```bash
+# 1. Install Fly.io CLI
+brew install flyctl
+
+# 2. Login to Fly.io (opens browser for authentication)
+flyctl auth login
+
+# 3. Initialize app (creates fly.toml)
+flyctl launch --name get-transcript --region sjc
+
+# 4. Set required secrets (replace with your actual values)
+flyctl secrets set API_KEY=your_secure_api_key_here
+flyctl secrets set WEBSHARE_USERNAME=your_webshare_username
+flyctl secrets set WEBSHARE_PASSWORD=your_webshare_password
+
+# 5. Deploy the application
+flyctl deploy
+```
+
+#### **Ongoing Deployment Commands**
+```bash
+# Deploy updates
+flyctl deploy
+
+# View live logs
+flyctl logs
+
+# Check app status
+flyctl status
+
+# Update secrets (when needed)
+flyctl secrets set API_KEY=new_api_key_here
+
+# Scale app (cost optimization)
+flyctl scale count 1 --region sjc
+```
+
+#### **🔐 Secrets Management**
+
+**Setting Secrets:**
+```bash
+# Set individual secrets
+flyctl secrets set API_KEY=your_secure_api_key_here
+flyctl secrets set WEBSHARE_USERNAME=your_username
+flyctl secrets set WEBSHARE_PASSWORD=your_password
+
+# Set multiple secrets at once
+flyctl secrets set API_KEY=key WEBSHARE_USERNAME=user WEBSHARE_PASSWORD=pass
+```
+
+**Managing Secrets:**
+```bash
+# List all secrets (names only, values are encrypted)
+flyctl secrets list
+
+# Remove a secret
+flyctl secrets unset SECRET_NAME
+
+# Import secrets from file (format: NAME=VALUE per line)
+flyctl secrets import < secrets.txt
+```
+
+**⚠️ Important Notes:**
+- **Secret values cannot be retrieved** once set (security feature)
+- **Deployment required**: Run `flyctl deploy` after setting secrets to apply changes
+- **Case sensitive**: Secret names are stored exactly as provided
+- **Environment variables**: Secrets are available as ENV vars in the app
+- **Automatic restart**: Setting secrets triggers machine restart
+
+**Backbone Connection Update:**
+For Webshare backbone connections, the username does NOT need the `-rotate` suffix:
+```bash
+# Backbone connection (no -rotate suffix)
+flyctl secrets set WEBSHARE_USERNAME=your_webshare_username
+
+# After updating secrets, redeploy to apply changes
+flyctl deploy
+```
+
+#### **Development Workflow**
+```bash
+# 1. Make code changes
+# 2. Test locally (optional)
+python app.py
+
+# 3. Deploy to Fly.io
+flyctl deploy
+
+# 4. Monitor deployment
+flyctl logs --follow
+```
+
+### **Required Files for Fly.io Deployment**
+```
+├── fly.toml              # Fly.io configuration
+├── Dockerfile            # Container build instructions
+├── app.py               # FastAPI application
+├── requirements.txt     # Python dependencies
+└── README.md           # This documentation
+```
+
+#### **Key Configuration Files**
+
+**fly.toml** - Fly.io app configuration:
+```toml
+app = "get-transcript"
+primary_region = "sjc"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+```
+
+**Dockerfile** - Container configuration:
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8080
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+### **Branch Structure**
+- `main` - Original Firebase Functions version
+- `migrate-to-fly` - Current Fly.io deployment (✅ ACTIVE)
+
+## ⚙️ **Technical Details**
+
+### **Current Configuration**
+- **Runtime**: Python 3.12 (Docker container)
+- **Framework**: FastAPI with Uvicorn
+- **Memory**: 1GB RAM
+- **CPU**: Shared CPU (cost optimized)
+- **Port**: 8080 (Fly.io standard)
+- **Auto-scaling**: Min 0, Max 1 (cost optimized)
+
+### **Proxy Configuration**
+- **Provider**: Webshare residential proxies
+- **Endpoint**: p.webshare.io:80 (rotating backbone)
+- **Authentication**: Username/Password (stored in Fly.io secrets)
+- **Features**: Automatic IP rotation, residential IPs, optimized for YouTube
+- **Status**: ✅ Working perfectly (no more 407 errors!)
+
+### **Dependencies**
+```
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+youtube-transcript-api==1.1.0
+requests==2.31.0
+pydantic==2.5.0
+```
+
+## 📊 **Monitoring & Logs**
+
+### **Fly.io Logs**
+```bash
+# View live logs
+flyctl logs
+
+# View app status
+flyctl status
+```
+
+### **Application Logging**
+- **Info Level**: Successful requests, proxy IP rotation
 - **Warning Level**: Authentication failures, invalid requests
 - **Error Level**: Internal errors, proxy failures
+- **Integration**: Can be configured to send to Google Cloud Logging if needed
 
-### Monitoring Setup
+## 🔒 **Security**
 
-Set up alerts in Google Cloud Monitoring for:
-- Error rate > 5% over 5 minutes
-- Request rate > 100/minute  
-- Function execution time > 30 seconds
-- Memory usage > 80%
-
-## Security
-
-### Best Practices Implemented
-
-- ✅ API key authentication
-- ✅ Input validation
-- ✅ Secure credential storage (Secret Manager)
-- ✅ CORS configuration
+### **Implemented Security**
+- ✅ API key authentication (Bearer token)
+- ✅ Input validation (video ID format)
+- ✅ Secure credential storage (Fly.io secrets)
+- ✅ CORS enabled for web applications
 - ✅ Error message sanitization
 - ✅ Request logging for audit trails
 
-### Security Considerations
+### **Security Notes**
+- ⚠️ **NEVER commit real API keys to repositories** - use environment variables or secure storage
+- No rate limiting currently implemented
+- Proxy credentials stored securely in Fly.io secrets
+- All traffic over HTTPS
+- Rotate API keys regularly for security
 
-- API keys should be rotated regularly
-- Monitor for unusual request patterns
-- Set up rate limiting if needed
-- Review access logs periodically
+## 🐛 **Troubleshooting**
 
-## Troubleshooting
+### **Common Issues**
+1. **401 Unauthorized**: Check Authorization header format
+2. **404 Not Found**: Video may not have transcripts or be private
+3. **500 Internal Error**: Check Fly.io logs with `flyctl logs`
+4. **Deployment Fails**: Verify secrets are set correctly
+5. **App Won't Start**: Check Dockerfile and requirements.txt
 
-### Common Issues
+### **Fly.io Specific Troubleshooting**
+```bash
+# Check app status
+flyctl status
 
-1. **"Unauthorized" errors**
-   - Check API key is correctly set in Secret Manager
-   - Verify Authorization header format
+# View live logs
+flyctl logs --follow
 
-2. **"Transcript not available" errors**
-   - Video may not have transcripts enabled
-   - Video may be private or deleted
-   - Try with known working video IDs
+# Check secrets (lists names only, not values)
+flyctl secrets list
 
-3. **Proxy connection errors**
-   - Verify proxy credentials in Secret Manager
-   - Check Decodo service status
-   - Review function logs for detailed error messages
+# Restart app
+flyctl machine restart
 
-4. **Deployment failures**
-   - Ensure Firebase project is properly configured
-   - Check that all required APIs are enabled
-   - Verify Secret Manager permissions
+# Check machine status
+flyctl machine list
 
-### Getting Help
+# SSH into running container (for debugging)
+flyctl ssh console
+```
 
-1. Check function logs: `firebase functions:log`
-2. Review Google Cloud Logging for detailed error messages
-3. Test with the provided test script
-4. Verify all secrets are properly configured
+### **Quick Diagnostics**
+```bash
+# Test health endpoint (public)
+curl "https://get-transcript.fly.dev/health"
 
-## Changelog
+# Test with your API key (authenticated)
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ"
 
-### Version 1.1.0 - 2025-01-22
-- **BREAKING**: Migrated from Decodo to Webshare proxy for improved reliability
+# Check if secrets are properly set
+flyctl secrets list
+# Should show: API_KEY, WEBSHARE_USERNAME, WEBSHARE_PASSWORD
+```
+
+### **Common Deployment Issues**
+1. **Secret Not Set**: `flyctl secrets set KEY=value` then `flyctl deploy`
+2. **Secret Not Applied**: Must run `flyctl deploy` after setting secrets
+3. **Wrong Username Format**:
+   - Backbone connection: `your_username` (no suffix)
+   - Rotating proxy: `your_username-rotate` (with suffix)
+4. **Wrong Region**: App deployed in `sjc` (San Jose)
+5. **Port Issues**: App runs on port 8080 internally
+6. **Memory Limits**: 1GB RAM allocated (increase if needed)
+7. **Auto-scaling**: Min 0 machines (cost optimized)
+
+### **Secrets Troubleshooting**
+```bash
+# Check if secrets exist
+flyctl secrets list
+
+# Verify secret names (case sensitive)
+# Should show: API_KEY, WEBSHARE_USERNAME, WEBSHARE_PASSWORD
+
+# If secrets are set but not working:
+flyctl deploy  # Redeploy to apply secret changes
+
+# Check if app is using secrets correctly
+flyctl logs --follow  # Look for authentication errors
+```
+
+## 📝 **Changelog**
+
+### **Version 2.0.0 - June 2025**
+- 🚀 **MAJOR**: Migrated from Firebase Functions to Fly.io
+- ✅ **FIXED**: Resolved 407 Proxy Authentication errors
+- 🔄 **CHANGED**: Framework from Firebase Functions to FastAPI
+- 💰 **IMPROVED**: Lower costs than Firebase Functions
+- 📦 **ADDED**: Docker containerization
+- 🌐 **MAINTAINED**: Same API interface and authentication
+
+### **Version 1.1.0 - January 2025**
+- Migrated from Decodo to Webshare proxy
 - Enhanced proxy configuration with automatic IP rotation
-- Comprehensive documentation updates and migration guides
-- Successfully tested with Webshare proxy integration
 
-For detailed changelog, see [changelog.md](./changelog.md)
+## 📄 **License**
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see LICENSE file for details.

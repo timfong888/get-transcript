@@ -32,6 +32,6 @@ These are MCP servers that are specific to our project and are not general purpo
 - Firebase Functions codebase: https://github.com/firebase/firebase-functions
 - Decodo Residential proxies: https://context7.com/decodo/decodo
 - Webshare Proxy: https://context7.com/context7/apidocs_webshare_io
-- Youtube Transript API:  https://context7.com/jdepoix/youtube-transcript-api
+- Youtube Transcript API:  https://context7.com/jdepoix/youtube-transcript-api
 
 

@@ -9,8 +9,8 @@ This guide shows how to retrieve and verify the Webshare proxy credentials store
 - **Domain**: p.webshare.io
 - **Port**: 80
 - **Protocol**: HTTP (handles both HTTP and HTTPS traffic)
-- **Username**: pafkmsbh (stored without -rotate suffix)
-- **Password**: mb73d2wpp3rl
+- **Username**: [STORED IN SECRETS] (stored without -rotate suffix)
+- **Password**: [STORED IN SECRETS]
 
 ## CLI Commands to Retrieve Credentials
 
@@ -58,28 +58,28 @@ firebase functions:secrets:versions PROXY_PASSWORD
 
 When you run `firebase functions:secrets:access PROXY_USERNAME`, you should see:
 ```
-pafkmsbh
+your_webshare_username
 ```
 
 When you run `firebase functions:secrets:access PROXY_PASSWORD`, you should see:
 ```
-mb73d2wpp3rl
+your_webshare_password
 ```
 
 ## How the Credentials Are Used
 
 The `WebshareProxyConfig` class automatically:
-1. Takes the username `pafkmsbh`
-2. Adds the `-rotate` suffix to become `pafkmsbh-rotate`
-3. Constructs the proxy URL: `http://pafkmsbh-rotate:mb73d2wpp3rl@p.webshare.io:80/`
+1. Takes the username from secrets
+2. Adds the `-rotate` suffix to become `username-rotate`
+3. Constructs the proxy URL: `http://username-rotate:password@p.webshare.io:80/`
 
 ## Testing the Configuration
 
 ### Local Test
-Update `test_local.py` with the credentials:
+Update `test_local.py` with your credentials:
 ```python
-proxy_username = "pafkmsbh"
-proxy_password = "mb73d2wpp3rl"
+proxy_username = "your_webshare_username"
+proxy_password = "your_webshare_password"
 ```
 
 Then run:
