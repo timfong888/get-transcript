@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import requests
+import uuid
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,6 +37,7 @@ app.add_middleware(
 # Pydantic models
 class TranscriptRequest(BaseModel):
     videoId: str
+    compaction_id: Optional[str] = None
 
 class TranscriptResponse(BaseModel):
     transcript: str
@@ -43,6 +45,8 @@ class TranscriptResponse(BaseModel):
     title: str
     channel: str
     videoId: str
+    compaction_id: str
+    status_code: int
 
 # Environment variables
 API_KEY = os.getenv("API_KEY")
@@ -119,7 +123,7 @@ def log_api_request_ip(session, proxy_username: str, proxy_password: str) -> str
         return "Unknown"
 
 
-def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str) -> Dict[str, Any]:
+def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str, compaction_id: str) -> Dict[str, Any]:
     """Retrieve transcript for a YouTube video using the simplified 1.1.1 API."""
     logger.info(f"=== STARTING get_video_transcript for video: {video_id} ===")
 
@@ -187,7 +191,9 @@ def get_video_transcript(video_id: str, proxy_username: str, proxy_password: str
             "language": fetched_transcript.language_code,
             "title": f"Video {video_id}",  # Title not available in simplified API
             "channel": "Unknown Channel",  # Channel info not available from transcript API
-            "videoId": video_id
+            "videoId": video_id,
+            "compaction_id": compaction_id,
+            "status_code": 200
         }
 
         logger.info(f"🎉 SUCCESS: Retrieved transcript for video {video_id} via Webshare proxy")
@@ -232,37 +238,48 @@ async def root():
 async def get_transcript_get(
     request: Request,
     videoId: Optional[str] = Query(None),
+    compaction_id: Optional[str] = Query(None),
     check: Optional[str] = Query(None)
 ):
     """GET endpoint for transcript retrieval."""
-    return await handle_transcript_request(request, videoId, check)
+    return await handle_transcript_request(request, videoId, compaction_id, check)
 
 @app.post("/get_transcript")
 async def get_transcript_post(request: Request, body: Optional[TranscriptRequest] = None):
     """POST endpoint for transcript retrieval."""
     video_id = body.videoId if body else None
-    return await handle_transcript_request(request, video_id, None)
+    compaction_id = body.compaction_id if body else None
+    return await handle_transcript_request(request, video_id, compaction_id, None)
 
-async def handle_transcript_request(request: Request, video_id: Optional[str], check: Optional[str]):
+async def handle_transcript_request(request: Request, video_id: Optional[str], compaction_id: Optional[str], check: Optional[str]):
     """Handle transcript request logic."""
     logger.info("=== NEW REQUEST ===")
     logger.info(f"🌐 Request method: {request.method}")
     logger.info(f"🌐 Request URL: {request.url}")
-    
+
+    # Generate compaction_id if not provided
+    if not compaction_id:
+        compaction_id = str(uuid.uuid4())
+        logger.info(f"🆔 Generated compaction_id: {compaction_id}")
+    else:
+        logger.info(f"🆔 Using provided compaction_id: {compaction_id}")
+
     # Check authorization
     authorization = request.headers.get("authorization")
     logger.info("🔐 STEP 1: Checking API key authorization...")
-    
+
     if not verify_api_key(authorization):
         logger.warning("❌ Unauthorized request - invalid or missing API key")
         raise HTTPException(
             status_code=401,
             detail={
                 "error": "UNAUTHORIZED",
-                "message": "Valid API key required in Authorization header"
+                "message": "Valid API key required in Authorization header",
+                "compaction_id": compaction_id,
+                "status_code": 401
             }
         )
-    
+
     logger.info("✅ API key authorization successful")
     
     # Check if this is an IP check request
@@ -274,12 +291,12 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
                 ip_data = response.json()
                 cloud_ip = ip_data.get('origin', 'Unknown')
                 logger.info(f"☁️ Cloud function IP: {cloud_ip}")
-                return {"cloud_function_ip": cloud_ip}
+                return {"cloud_function_ip": cloud_ip, "compaction_id": compaction_id, "status_code": 200}
             else:
-                raise HTTPException(status_code=500, detail={"error": "Failed to get IP"})
+                raise HTTPException(status_code=500, detail={"error": "Failed to get IP", "compaction_id": compaction_id, "status_code": 500})
         except Exception as e:
             logger.error(f"❌ Error getting IP: {str(e)}")
-            raise HTTPException(status_code=500, detail={"error": "Failed to get IP"})
+            raise HTTPException(status_code=500, detail={"error": "Failed to get IP", "compaction_id": compaction_id, "status_code": 500})
     
     # Validate video ID
     if not video_id:
@@ -288,7 +305,9 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
             status_code=400,
             detail={
                 "error": "MISSING_VIDEO_ID",
-                "message": "videoId parameter is required"
+                "message": "videoId parameter is required",
+                "compaction_id": compaction_id,
+                "status_code": 400
             }
         )
     
@@ -303,7 +322,9 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
             status_code=500,
             detail={
                 "error": "CONFIGURATION_ERROR",
-                "message": "Proxy credentials not configured"
+                "message": "Proxy credentials not configured",
+                "compaction_id": compaction_id,
+                "status_code": 500
             }
         )
     
@@ -311,21 +332,23 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
     
     try:
         logger.info("🎬 STEP 5: Calling get_video_transcript...")
-        result = get_video_transcript(video_id, WEBSHARE_USERNAME, WEBSHARE_PASSWORD)
-        
+        result = get_video_transcript(video_id, WEBSHARE_USERNAME, WEBSHARE_PASSWORD, compaction_id)
+
         logger.info(f"🎉 Successfully processed request for video {video_id}")
         return result
-        
+
     except ValueError as e:
         logger.warning(f"Invalid request: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "INVALID_VIDEO_ID",
-                "message": str(e)
+                "message": str(e),
+                "compaction_id": compaction_id,
+                "status_code": 400
             }
         )
-    
+
     except (TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript) as e:
         logger.info(f"No transcript available for video {video_id}: {str(e)}")
         raise HTTPException(
@@ -333,17 +356,21 @@ async def handle_transcript_request(request: Request, video_id: Optional[str], c
             detail={
                 "error": "TRANSCRIPT_NOT_AVAILABLE",
                 "message": "No transcript available for this video",
-                "videoId": video_id
+                "videoId": video_id,
+                "compaction_id": compaction_id,
+                "status_code": 404
             }
         )
-    
+
     except Exception as e:
         logger.error(f"❌ Unexpected error: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",
-                "message": "An unexpected error occurred"
+                "message": "An unexpected error occurred",
+                "compaction_id": compaction_id,
+                "status_code": 500
             }
         )
 

@@ -35,7 +35,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
 curl -X POST \
      -H "Authorization: Bearer YOUR_API_KEY_HERE" \
      -H "Content-Type: application/json" \
-     -d '{"videoId": "dQw4w9WgXcQ"}' \
+     -d '{"videoId": "dQw4w9WgXcQ", "compaction_id": "my-custom-id"}' \
      "https://get-transcript.fly.dev/get_transcript"
 ```
 
@@ -63,7 +63,34 @@ data = response.json()
 print(data['transcript'])
 ```
 
+## 🔧 **Parameters**
+
+### **Required Parameters**
+- `videoId` (string): YouTube video ID (11 characters)
+
+### **Optional Parameters**
+- `compaction_id` (string): Custom tracking ID for request correlation
+  - If not provided, a UUID will be automatically generated
+  - Included in all responses (success and error) for tracking purposes
+  - Useful for correlating requests across video processing pipelines
+
+### **Parameter Examples**
+```bash
+# GET with compaction_id
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     "https://get-transcript.fly.dev/get_transcript?videoId=dQw4w9WgXcQ&compaction_id=my-tracking-id"
+
+# POST with compaction_id
+curl -X POST \
+     -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"videoId": "dQw4w9WgXcQ", "compaction_id": "my-tracking-id"}' \
+     "https://get-transcript.fly.dev/get_transcript"
+```
+
 ## 📊 **Response Format**
+
+All responses include a `status_code` field in the response body for easy access by automation tools like Pipedream, in addition to the standard HTTP status code in headers.
 
 ### **Success Response (200)**
 ```json
@@ -72,7 +99,9 @@ print(data['transcript'])
   "language": "en",
   "title": "Video dQw4w9WgXcQ",
   "channel": "Unknown Channel",
-  "videoId": "dQw4w9WgXcQ"
+  "videoId": "dQw4w9WgXcQ",
+  "compaction_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status_code": 200
 }
 ```
 
@@ -83,7 +112,9 @@ print(data['transcript'])
 {
   "detail": {
     "error": "UNAUTHORIZED",
-    "message": "Valid API key required in Authorization header"
+    "message": "Valid API key required in Authorization header",
+    "compaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status_code": 401
   }
 }
 ```
@@ -93,7 +124,9 @@ print(data['transcript'])
 {
   "detail": {
     "error": "MISSING_VIDEO_ID",
-    "message": "videoId parameter is required"
+    "message": "videoId parameter is required",
+    "compaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status_code": 400
   }
 }
 ```
@@ -104,7 +137,9 @@ print(data['transcript'])
   "detail": {
     "error": "TRANSCRIPT_NOT_AVAILABLE",
     "message": "No transcript available for this video",
-    "videoId": "someVideoId"
+    "videoId": "someVideoId",
+    "compaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status_code": 404
   }
 }
 ```
